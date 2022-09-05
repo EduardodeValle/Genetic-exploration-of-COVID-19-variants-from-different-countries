@@ -1,0 +1,277 @@
+---
+title: "21_FJ_TEC_BT1013_1_JoseEduardodeValleLaraAA_A01734957_Evidencia2"
+author: "Eduardo de Valle"
+date: "25/4/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# ÁRBOLES FILOGENÉTICOS CON DECIPHER
+
+```{r}
+#Iniciar la libreria DECIPHER
+library(DECIPHER)
+#Abrir el archivo con todas las secuencias
+gen <- system.file("extdata", "Sars cov 2.gen", package="DECIPHER")
+#Establecer la conexión con la base de datos
+dbConn <- dbConnect(SQLite(), ":memory:")
+Seqs2DB("Sars cov 2.gen", "GenBank", dbConn, "Sars-cov-2")
+```
+
+```{r}
+#l guarda la longitud de cada secuencia
+l <- IdLengths(dbConn)
+#Add2DB es para visualizar la tabla con la longitud de cada secuencia
+Add2DB(l, dbConn)
+```
+
+```{r}
+#Organiza en base a las especies
+r <- IdentifyByRank(dbConn,add2tbl=TRUE)
+dna <- SearchDB(dbConn)
+#Alineamiento de las secuencias
+BrowseSeqs(subseq(dna))
+```
+
+```{r}
+#Distancia entre matrices
+d <- DistanceMatrix(dna, verbose = FALSE)
+d
+```
+
+```{r}
+#Arbol filogenetico
+c <- IdClusters(d, method = "complete", cutoff = 0.2, showPlot = TRUE, verbose = FALSE)
+```
+
+```{r}
+#BrowseDB muestra la tabla en el navegador
+BrowseDB(dbConn, maxChars=20)
+#Cerrar la conexion con la base de datos
+dbDisconnect(dbConn)
+```
+
+# ÁRBOLES FILOGENÉTICOS CON SEQINR
+
+```{r}
+library(seqinr)
+library(adegenet)
+library(ape)
+library(ggtree)
+library(DECIPHER)
+library(viridis)
+library(ggmsa)
+library(ggplot2)
+library(phytools)
+virus <- c("MT320891.2", "MW199186.1", "MW185825.1", "MW741552.1", "MT324062.1", "MT517433.1", "MT358638.1", "MW595908.1", "NC_045512.2", "MT594402.1")
+virus_sequences <- read.GenBank(virus)
+virus_GenBank_IDs <- paste(attr(virus_sequences, "species"), names(virus_sequences), sep="_HA_")
+virus_GenBank_IDs
+write.dna(virus_sequences, file = "virus seqs.fasta", format = "fasta", append =  FALSE)
+virus_seq_no_alineadas <- read.fasta("virus seqs.fasta", seqtype = "DNA", as.string = TRUE, forceDNAtolower = FALSE)
+```
+
+```{R}
+virus_seq_no_alineadas <- readDNAStringSet("virus seqs.fasta", format = "fasta")
+virus_seq_no_alineadas <- OrientNucleotides(virus_seq_no_alineadas)
+virus_align_seqs <- AlignSeqs((virus_seq_no_alineadas))
+writeXStringSet(virus_align_seqs, file = "virus align seq.fasta")
+virus_aligned <- read.alignment("virus align seq.fasta", format = "fasta")
+virus_aligned
+matriz_distancia <- dist.alignment(virus_aligned, matrix = "similarity")
+virus_filogenetico <- nj(matriz_distancia)
+virus_plot_filogenetico <- ladderize(virus_filogenetico)
+#Arbol filogenetico
+plot(virus_plot_filogenetico)
+title("Variantes del Sars-cov-2")
+
+plot(unroot(virus_plot_filogenetico), type="unrooted", no.margin=TRUE, lab4ut="axial", edge.width=2)
+title("Variantes del Sars-cov-2")
+
+roundPhylogram(virus_plot_filogenetico)
+title("Variantes del Sars-cov-2")
+```
+
+# ÁRBOL FILOGENÉTICO CON INFORMACIÓN
+
+```{R}
+text.string <- "(((((Turquia - MW199186.1,Republica Checa - MT517433.1),Peru - MW185825.1),Rusia - MW741552.1),Mexico - MW595908.1),((Iran - MT320891.2,Wuhan - NC 045512.2),Alemania - MT358638.1),(Sudafrica - MT324062.1,Francia - MT594402.1));"
+vert.tree <-read.tree(text=text.string)
+plot(vert.tree,no.margin=TRUE, edge.width=2)
+```
+
+Tiene sentido que la secuencia del virus alemán y el virus chino tengan afinidad en su secuencia, debido a que Alemania fue uno de los primeros epicentros de contagios. Se observa que el virus de México y el de Perú se parecen, puede deberse a que se encuentran en el mismo continente, mientras que el virus de Rusia, República Checa y Turquía tienen gran relación, podrá deberse a que se encuentran geográficamente cerca
+
+# Calcula la longitud de las secuencias de cada variante.
+
+```{r}
+sudafrica <- read.fasta("sudaf.fasta")
+rep_checa <- read.fasta("checa.fasta")
+peru <- read.fasta("peru.fasta")
+iran <- read.fasta("iran.fasta")
+alemania <- read.fasta("alemania.fasta")
+turquia <- read.fasta("turquia.fasta")
+rusia<- read.fasta("rusia.fasta")
+wuhan <- read.fasta("wuhan.fasta")
+mexico <- read.fasta("mexico.fasta")
+francia <- read.fasta("francia.fasta")
+
+
+cat("Longitud de la secuencia del virus de Sudafrica: ", length(sudafrica[[1]]), "\n\n")
+cat("Longitud de la secuencia del virus de Republica Checa: ", length(rep_checa[[1]]), "\n\n")
+cat("Longitud de la secuencia del virus de Peru: ", length(peru[[1]]), "\n\n")
+cat("Longitud de la secuencia del virus de Iran: ", length(iran[[1]]), "\n\n")
+cat("Longitud de la secuencia del virus de Alemania: ", length(alemania[[1]]), "\n\n")
+cat("Longitud de la secuencia del virus de Turquia: ", length(turquia[[1]]), "\n\n")
+cat("Longitud de la secuencia del virus de Rusia: ", length(rusia[[1]]), "\n\n")
+cat("Longitud de la secuencia del virus de Wuhan: ", length(wuhan[[1]]), "\n\n")
+cat("Longitud de la secuencia del virus de Mexico: ", length(mexico[[1]]), "\n\n")
+cat("Longitud de la secuencia del virus de Francia: ", length(francia[[1]]), "\n\n")
+```
+
+# Crea una gráfica donde compares las bases de ADN que componen a cada una de las variantes del virus.
+
+```{r}
+compara <- function(sudafrica, rep_checa, peru, iran, alemania, turquia, rusia, wuhan, mexico, francia){
+  par(mfrow=c(3,1))
+  barplot(table(sudafrica), col = 1:4, main = getAnnot(sudafrica))
+  barplot(table(rep_checa), col = 1:4, main = getAnnot(rep_checa))
+  barplot(table(peru), col = 1:4, main = getAnnot(peru))
+  barplot(table(iran), col = 1:4, main = getAnnot(iran))
+  barplot(table(alemania), col = 1:4, main = getAnnot(alemania))
+  barplot(table(turquia), col = 1:4, main = getAnnot(turquia))
+  barplot(table(rusia), col = 1:4, main = getAnnot(rusia))
+  barplot(table(wuhan), col = 1:4, main = getAnnot(wuhan))
+  barplot(table(mexico), col = 1:4, main = getAnnot(mexico))
+  barplot(table(francia), col = 1:4, main = getAnnot(francia))
+}
+
+cat("Sudáfrica:\n")
+count(rep_checa[[1]], 1)
+cat("\n\n")
+
+cat("Perú:\n")
+count(peru[[1]], 1)
+cat("\n\n")
+
+cat("Irán:\n")
+count(iran[[1]], 1)
+cat("\n\n")
+
+cat("Alemania:\n")
+count(alemania[[1]], 1)
+cat("\n\n")
+
+cat("Turquía:\n")
+count(turquia[[1]], 1)
+cat("\n\n")
+
+cat("Rusia:\n")
+count(rusia[[1]], 1)
+cat("\n\n")
+
+cat("Wuhan:\n")
+count(wuhan[[1]], 1)
+cat("\n\n")
+
+cat("México:\n")
+count(mexico[[1]], 1)
+cat("\n\n")
+
+cat("Francia:\n")
+count(francia[[1]], 1)
+cat("\n\n")
+
+compara(sudafrica[[1]], rep_checa[[1]], peru[[1]], iran[[1]], alemania[[1]], turquia[[1]], rusia[[1]], wuhan[[1]], mexico[[1]], francia[[1]])
+```
+
+Según los resultados de las tablas, la cantidad de adenina siempre ronda alrededor de 8900, la timina ronda arriba de 5450, la guanina se encuentra arriba de 5850 y la citosina arriba de las 9550 bases. Los 10 virus analizados muestran bastante relación y su diferencia es muy poca, lo cual podría deberse a diversas mutaciones causadas por las condiciones geográficas o la reacción del portador.
+
+# ¿Cuál es el %GC de cada variante?
+
+```{r}
+cat("Porcentaje de GC del virus de Sudafrica: ", 100*(GC(sudafrica[[1]])), "%\n\n")
+cat("Porcentaje de GC del virus de Republica Checa: ", 100*(GC(rep_checa[[1]])), "%\n\n")
+cat("Porcentaje de GC del virus de Peru: ", 100*(GC(peru[[1]])), "%\n\n")
+cat("Porcentaje de GC del virus de Iran: ", 100*(GC(iran[[1]])), "%\n\n")
+cat("Porcentaje de GC del virus de Alemania: ", 100*(GC(alemania[[1]])), "%\n\n")
+cat("Porcentaje de GC del virus de Turquia: ", 100*(GC(turquia[[1]])), "%\n\n")
+cat("Porcentaje de GC del virus de Rusia: ", 100*(GC(rusia[[1]])), "%\n\n")
+cat("Porcentaje de GC del virus de Wuhan: ", 100*(GC(wuhan[[1]])), "%\n\n")
+cat("Porcentaje de GC del virus de Mexico: ", 100*(GC(mexico[[1]])), "%\n\n")
+cat("Porcentaje de GC del virus de Francia: ", 100*(GC(francia[[1]])), "%\n\n")
+```
+
+El porcentaje de guanina y citosina es de interés, ya que la guanina está unida con la citosina por un triple puente de hidrógeno mientras que la adenina está unida con la timina por un doble puente de hidrógeno. Para desnaturalizar el ARN se requiere someterlo a calor, entonces un mayor contenido de guanina-citosina podría significar un punto de fusión más alto, el virus podría resistir más tiempo en lugares calurosos. En estos resultados se observa que 8 virus tuvieron un porcentaje arriba de 37.95 y 2 obtuvieron un porcentaje arriba de 38. Son muy parecidas las variantes, los cambios son casi despreciables. 
+
+# Crea las secuencias contrasentido de cada variante.
+
+```{r}
+secuencia.complemento <- function( datos ){
+  salida <- c()
+  for ( nucleotido in datos ) {
+    if(nucleotido == "a"){
+      salida <- append(salida,"t")
+    }
+    else if(nucleotido == "t"){
+      salida <- append(salida,"a")
+    }
+    else if(nucleotido == "g") {salida <- append(salida,"c")}
+    else{ salida <- append(salida,"g") }
+  }
+  return (salida)
+}
+```
+
+```{r}
+head( sudafrica[[1]], n = length(sudafrica[[1]]))
+head( secuencia.complemento(sudafrica[[1]] ), n = length(sudafrica[[1]]))
+```
+
+```{r}
+head( rep_checa[[1]], n = length(rep_checa[[1]]))
+head( secuencia.complemento(rep_checa[[1]] ), n = length(rep_checa[[1]]))
+```
+
+```{r}
+head( peru[[1]], n = length(peru[[1]]))
+head( secuencia.complemento(peru[[1]] ), n = length(peru[[1]]))
+```
+
+```{r}
+head( iran[[1]], n = length(iran[[1]]))
+head( secuencia.complemento(iran[[1]] ), n = length(iran[[1]]))
+```
+
+```{r}
+head( alemania[[1]], n = length(alemania[[1]]))
+head( secuencia.complemento(alemania[[1]] ), n = length(alemania[[1]]))
+```
+
+```{r}
+head( turquia[[1]], n = length(turquia[[1]]))
+head( secuencia.complemento(turquia[[1]] ), n = length(turquia[[1]]))
+```
+
+```{r}
+head( rusia[[1]], n = length(rusia[[1]]))
+head( secuencia.complemento(rusia[[1]] ), n = length(rusia[[1]]))
+```
+
+```{r}
+head( wuhan[[1]], n = length(wuhan[[1]]))
+head( secuencia.complemento(wuhan[[1]] ), n = length(wuhan[[1]]))
+```
+
+```{r}
+head( mexico[[1]], n = length(mexico[[1]]))
+head( secuencia.complemento(mexico[[1]] ), n = length(mexico[[1]]))
+```
+
+```{r}
+head( francia[[1]], n = length(francia[[1]]))
+head( secuencia.complemento(francia[[1]] ), n = length(francia[[1]]))
+```
